@@ -1,101 +1,89 @@
+"use client";
+
 import Image from "next/image";
+import { useState } from "react";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [image, setImage] = useState<string | null>(null);
+  const [ocrResult, setOcrResult] = useState<string | null>("No Content");
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+  const [isLoading, setIsLoading] = useState(false);
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleOcr = async () => {
+    setIsLoading(true);
+    const response = await fetch("/api/ocr", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ image: image, model: "gpt-4o-mini" }),
+    });
+    const data = await response.json();
+    setOcrResult(data);
+    setIsLoading(false);
+  };
+
+  function convertToMarkdown(content: string): string {
+    return (
+      content
+        // Convert headers
+        .replace(/<h[1-6]>(.*?)<\/h[1-6]>/g, (_, text) => `# ${text}\n\n`)
+        // Convert paragraphs
+        .replace(/<p>(.*?)<\/p>/g, "$1\n\n")
+        // Convert bold
+        .replace(/<(strong|b)>(.*?)<\/(strong|b)>/g, "**$2**")
+        // Convert italic
+        .replace(/<(em|i)>(.*?)<\/(em|i)>/g, "*$2*")
+        // Convert links
+        .replace(/<a href="(.*?)">(.*?)<\/a>/g, "[$2]($1)")
+        // Convert unordered lists
+        .replace(/<ul>(.*?)<\/ul>/g, "$1\n")
+        .replace(/<li>(.*?)<\/li>/g, "- $1\n")
+        // Convert ordered lists
+        .replace(/<ol>(.*?)<\/ol>/g, "$1\n")
+        .replace(/<li>(.*?)<\/li>/g, "1. $1\n")
+        // Convert line breaks
+        .replace(/<br\s*\/?>/g, "\n")
+        // Clean up extra spaces and lines
+        .replace(/\n\s*\n/g, "\n\n")
+        .trim()
+    );
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-start h-screen p-4">
+      <input type="file" onChange={handleFileChange} />
+      <div className="relative w-[300px] h-[300px]">
+        {image && (
           <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+            src={image}
+            fill
+            alt="Uploaded Image"
+            className="w-full h-auto object-contain"
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+        )}
+      </div>
+      <button
+        disabled={isLoading}
+        className="bg-blue-500 text-white px-4 py-2 rounded-md disabled:opacity-50"
+        onClick={handleOcr}
+      >
+        OCR {isLoading ? "..." : ""}
+      </button>
+      <div className="mt-4">
+        {ocrResult && <pre>{convertToMarkdown(ocrResult)}</pre>}
+      </div>
     </div>
   );
 }
