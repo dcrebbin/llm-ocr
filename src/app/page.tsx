@@ -126,6 +126,15 @@ export default function Home() {
               >
                 Next
               </button>
+              <button
+                className="px-3 py-1 bg-gray-700 rounded disabled:opacity-50"
+                onClick={() => {
+                  navigator.clipboard.writeText(ocrResult.join("\n"));
+                  alert("Copied to clipboard");
+                }}
+              >
+                Copy
+              </button>
             </div>
           </>
         )}
