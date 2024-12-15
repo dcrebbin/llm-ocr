@@ -27,7 +27,13 @@ export async function POST(req: Request) {
       ],
       max_tokens: 300,
     }),
+  }).catch((e) => {
+    console.error(e);
+    return Response.json(e);
   });
   const data = await response.json();
-  return Response.json(data.choices[0].message.content);
+  if (data?.choices[0]?.message?.content) {
+    return Response.json(data.choices[0].message.content);
+  }
+  return Response.json(data);
 }
